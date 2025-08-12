@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Monitor, FileText, Image, Video, Edit3, Shield, Eye, Clock, Loader, CheckCircle, AlertCircle } from 'lucide-react';
+import { Monitor, FileText, Shield, Eye, Clock, Loader, CheckCircle, AlertCircle } from 'lucide-react';
 
 const App = () => {
   const [currentUser, setCurrentUser] = useState(null);
