@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, Monitor, FileText, Image, Video, Plus, Play, Pause, Settings, Shield, Eye, Edit3, Save, X, Clock, Users, Zap, Loader, CheckCircle, AlertCircle } from 'lucide-react';
+import { Monitor, FileText, Image, Video, Edit3, Shield, Eye, Clock, Loader, CheckCircle, AlertCircle } from 'lucide-react';
 
 const App = () => {
   const [currentUser, setCurrentUser] = useState(null);
@@ -8,7 +8,7 @@ const App = () => {
   const [message, setMessage] = useState(null);
   
   // Estados para contenido y pantallas
-  const [screens, setScreens] = useState([
+  const [screens] = useState([
     { id: 'screen-001', name: 'Lobby Principal', status: 'online', lastSeen: new Date() },
     { id: 'screen-002', name: 'Sala de Espera', status: 'online', lastSeen: new Date() },
     { id: 'screen-003', name: 'Cafetería', status: 'offline', lastSeen: new Date(Date.now() - 300000) }
@@ -18,12 +18,6 @@ const App = () => {
     { id: 1, name: 'Bienvenida', type: 'quick-poster', data: { title: 'Bienvenidos', subtitle: 'Empresa XYZ', style: 'modern' }, createdAt: new Date() }
   ]);
 
-  const [assignments, setAssignments] = useState({
-    'screen-001': [1],
-    'screen-002': [1],
-    'screen-003': []
-  });
-
   // Estados para formularios
   const [loginForm, setLoginForm] = useState({ username: '', password: '' });
   const [newQuickPoster, setNewQuickPoster] = useState({
@@ -31,13 +25,6 @@ const App = () => {
     subtitle: '',
     content: '',
     style: 'modern'
-  });
-  const [htmlEditor, setHtmlEditor] = useState({
-    name: '',
-    html: `<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 60px; text-align: center; font-family: Arial, sans-serif; height: 100vh; display: flex; flex-direction: column; justify-content: center;">
-<h1 style="font-size: 4em; margin-bottom: 20px;">Tu Mensaje Aquí</h1>
-<p style="font-size: 1.5em; opacity: 0.9;">Personaliza este HTML como necesites</p>
-</div>`
   });
 
   // API Helper
@@ -89,45 +76,6 @@ const App = () => {
     setMessage(null);
   };
 
-  // Subida de archivos
-  const handleFileUpload = async (file, type) => {
-    if (!currentUser?.token) {
-      setMessage({ type: 'error', text: 'Debe iniciar sesión primero' });
-      return;
-    }
-
-    setLoading(true);
-    try {
-      // Convertir archivo a base64
-      const base64 = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-
-      const result = await apiCall('upload', { file: base64, type }, 'POST');
-      
-      if (result.public_id) {
-        const newContent = {
-          id: Date.now(),
-          name: file.name,
-          type: type,
-          cloudinary_id: result.public_id,
-          secure_url: result.secure_url,
-          createdAt: new Date()
-        };
-        
-        setContent(prev => [...prev, newContent]);
-        setMessage({ type: 'success', text: `${type === 'video' ? 'Video' : 'Imagen'} subido exitosamente` });
-      }
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Error al subir archivo' });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Crear cartel rápido
   const createQuickPoster = () => {
     if (!newQuickPoster.title) {
@@ -146,26 +94,6 @@ const App = () => {
     setContent(prev => [...prev, newContent]);
     setNewQuickPoster({ title: '', subtitle: '', content: '', style: 'modern' });
     setMessage({ type: 'success', text: 'Cartel creado exitosamente' });
-  };
-
-  // Crear cartel HTML
-  const createHtmlPoster = () => {
-    if (!htmlEditor.name || !htmlEditor.html) {
-      setMessage({ type: 'error', text: 'Nombre y contenido HTML son requeridos' });
-      return;
-    }
-    
-    const newContent = {
-      id: Date.now(),
-      name: htmlEditor.name,
-      type: 'html',
-      data: { html: htmlEditor.html },
-      createdAt: new Date()
-    };
-    
-    setContent(prev => [...prev, newContent]);
-    setHtmlEditor(prev => ({ ...prev, name: '' }));
-    setMessage({ type: 'success', text: 'Cartel HTML creado exitosamente' });
   };
 
   // Estilos para carteles
@@ -282,8 +210,6 @@ const App = () => {
             {[
               { id: 'dashboard', label: 'Dashboard', icon: Monitor },
               { id: 'content', label: 'Contenido', icon: FileText },
-              { id: 'screens', label: 'Pantallas', icon: Monitor },
-              { id: 'schedule', label: 'Programación', icon: Clock },
               { id: 'display', label: 'Vista Pantalla', icon: Eye }
             ].map(({ id, label, icon: Icon }) => (
               <button
@@ -336,7 +262,7 @@ const App = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-gray-600">Seguridad</p>
-                      <p className="text-2xl font-bold text-purple-600">JWT + Cloudinary</p>
+                      <p className="text-xl font-bold text-purple-600">JWT + Cloudinary</p>
                     </div>
                     <Shield className="h-8 w-8 text-purple-600" />
                   </div>
@@ -375,47 +301,6 @@ const App = () => {
           {activeSection === 'content' && (
             <div className="space-y-6">
               <h2 className="text-2xl font-bold text-gray-800">Gestión de Contenido</h2>
-
-              <div className="bg-white rounded-xl shadow-sm p-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Subir Archivos</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                    <Image className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                    <p className="text-sm text-gray-600 mb-4">Subir Imágenes</p>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => e.target.files[0] && handleFileUpload(e.target.files[0], 'image')}
-                      className="hidden"
-                      id="image-upload"
-                    />
-                    <label
-                      htmlFor="image-upload"
-                      className="cursor-pointer bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 inline-block"
-                    >
-                      Seleccionar Imagen
-                    </label>
-                  </div>
-
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                    <Video className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                    <p className="text-sm text-gray-600 mb-4">Subir Videos</p>
-                    <input
-                      type="file"
-                      accept="video/*"
-                      onChange={(e) => e.target.files[0] && handleFileUpload(e.target.files[0], 'video')}
-                      className="hidden"
-                      id="video-upload"
-                    />
-                    <label
-                      htmlFor="video-upload"
-                      className="cursor-pointer bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 inline-block"
-                    >
-                      Seleccionar Video
-                    </label>
-                  </div>
-                </div>
-              </div>
 
               {/* Quick Poster Creator */}
               <div className="bg-white rounded-xl shadow-sm p-6">
@@ -471,42 +356,6 @@ const App = () => {
                 </div>
               </div>
 
-              {/* HTML Editor */}
-              <div className="bg-white rounded-xl shadow-sm p-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Editor HTML Personalizado</h3>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <input
-                      type="text"
-                      placeholder="Nombre del cartel"
-                      value={htmlEditor.name}
-                      onChange={(e) => setHtmlEditor({...htmlEditor, name: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    />
-                    <textarea
-                      value={htmlEditor.html}
-                      onChange={(e) => setHtmlEditor({...htmlEditor, html: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono text-sm"
-                      rows="12"
-                    />
-                    <button
-                      onClick={createHtmlPoster}
-                      className="w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700"
-                    >
-                      Crear Cartel HTML
-                    </button>
-                  </div>
-                  
-                  <div className="border border-gray-200 rounded-lg overflow-hidden">
-                    <div className="bg-gray-800 text-white px-4 py-2 text-sm font-medium">Vista Previa</div>
-                    <div 
-                      className="min-h-[300px] overflow-auto"
-                      dangerouslySetInnerHTML={{ __html: htmlEditor.html }}
-                    />
-                  </div>
-                </div>
-              </div>
-
               {/* Content List */}
               <div className="bg-white rounded-xl shadow-sm p-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4">Contenido Disponible</h3>
@@ -515,32 +364,15 @@ const App = () => {
                     <div key={item.id} className="border border-gray-200 rounded-lg p-4">
                       <div className="flex items-center justify-between mb-2">
                         <h4 className="font-medium text-gray-800 truncate">{item.name}</h4>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          item.type === 'image' ? 'bg-blue-100 text-blue-800' :
-                          item.type === 'video' ? 'bg-purple-100 text-purple-800' :
-                          item.type === 'html' ? 'bg-orange-100 text-orange-800' :
-                          'bg-green-100 text-green-800'
-                        }`}>
-                          {item.type === 'quick-poster' ? 'Cartel' : 
-                           item.type === 'html' ? 'HTML' :
-                           item.type === 'image' ? 'Imagen' : 'Video'}
+                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          Cartel
                         </span>
                       </div>
                       
-                      {item.type === 'quick-poster' && (
-                        <div className={`p-4 rounded text-center text-sm ${posterStyles[item.data.style].bg} ${posterStyles[item.data.style].text}`}>
-                          <div className="font-bold">{item.data.title}</div>
-                          {item.data.subtitle && <div className="opacity-90">{item.data.subtitle}</div>}
-                        </div>
-                      )}
-                      
-                      {(item.type === 'image' || item.type === 'video' || item.type === 'html') && (
-                        <div className="bg-gray-100 h-32 rounded flex items-center justify-center">
-                          {item.type === 'image' && <Image className="h-8 w-8 text-gray-400" />}
-                          {item.type === 'video' && <Video className="h-8 w-8 text-gray-400" />}
-                          {item.type === 'html' && <Edit3 className="h-8 w-8 text-gray-400" />}
-                        </div>
-                      )}
+                      <div className={`p-4 rounded text-center text-sm ${posterStyles[item.data.style].bg} ${posterStyles[item.data.style].text}`}>
+                        <div className="font-bold">{item.data.title}</div>
+                        {item.data.subtitle && <div className="opacity-90">{item.data.subtitle}</div>}
+                      </div>
                       
                       <p className="text-xs text-gray-500 mt-2">
                         Creado: {item.createdAt.toLocaleDateString()}
@@ -552,25 +384,7 @@ const App = () => {
             </div>
           )}
 
-          {/* Otras secciones simplificadas para este ejemplo */}
-          {activeSection === 'screens' && (
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-gray-800">Gestión de Pantallas</h2>
-              <div className="bg-white rounded-xl shadow-sm p-6">
-                <p className="text-gray-600">Gestión de pantallas en desarrollo...</p>
-              </div>
-            </div>
-          )}
-
-          {activeSection === 'schedule' && (
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-gray-800">Programación</h2>
-              <div className="bg-white rounded-xl shadow-sm p-6">
-                <p className="text-gray-600">Sistema de programación en desarrollo...</p>
-              </div>
-            </div>
-          )}
-
+          {/* Display View */}
           {activeSection === 'display' && (
             <div className="space-y-6">
               <h2 className="text-2xl font-bold text-gray-800">Vista de Pantalla</h2>
@@ -578,13 +392,11 @@ const App = () => {
                 <div className="h-full flex items-center justify-center text-white">
                   {content.length > 0 ? (
                     <div className="text-center">
-                      {content[0].type === 'quick-poster' && (
-                        <div className={`p-12 rounded-lg ${posterStyles[content[0].data.style].bg} ${posterStyles[content[0].data.style].text}`}>
-                          <h1 className="text-6xl font-bold mb-4">{content[0].data.title}</h1>
-                          {content[0].data.subtitle && <h2 className="text-3xl mb-6 opacity-90">{content[0].data.subtitle}</h2>}
-                          {content[0].data.content && <p className="text-xl opacity-80">{content[0].data.content}</p>}
-                        </div>
-                      )}
+                      <div className={`p-12 rounded-lg ${posterStyles[content[0].data.style].bg} ${posterStyles[content[0].data.style].text}`}>
+                        <h1 className="text-6xl font-bold mb-4">{content[0].data.title}</h1>
+                        {content[0].data.subtitle && <h2 className="text-3xl mb-6 opacity-90">{content[0].data.subtitle}</h2>}
+                        {content[0].data.content && <p className="text-xl opacity-80">{content[0].data.content}</p>}
+                      </div>
                     </div>
                   ) : (
                     <div className="text-center">
