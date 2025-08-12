@@ -1,31 +1,49 @@
-const jwt = require('jsonwebtoken');
-
 exports.handler = async (event, context) => {
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: 'Method Not Allowed' };
+  // Configurar headers CORS
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  };
+
+  // Handle preflight
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 200, headers, body: '' };
   }
 
-  const { username, password } = JSON.parse(event.body);
-
-  // En producción, usa una base de datos real
-  if (username === 'admin' && password === 'admin') {
-    const token = jwt.sign(
-      { 
-        username, 
-        role: 'admin',
-        exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24) // 24 horas
-      },
-      process.env.JWT_SECRET
-    );
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ token, user: { username, role: 'admin' } })
+  if (event.httpMethod !== 'POST') {
+    return { 
+      statusCode: 405, 
+      headers,
+      body: JSON.stringify({ error: 'Method Not Allowed' })
     };
   }
 
-  return {
-    statusCode: 401,
-    body: JSON.stringify({ error: 'Credenciales inválidas' })
-  };
+  try {
+    const { username, password } = JSON.parse(event.body);
+
+    // Validación simple sin JWT (temporalmente)
+    if (username === 'admin' && password === 'admin') {
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({ 
+          token: 'simple-token-' + Date.now(),
+          user: { username: 'admin', role: 'admin' }
+        })
+      };
+    }
+
+    return {
+      statusCode: 401,
+      headers,
+      body: JSON.stringify({ error: 'Credenciales inválidas' })
+    };
+  } catch (error) {
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({ error: 'Error interno del servidor' })
+    };
+  }
 };
